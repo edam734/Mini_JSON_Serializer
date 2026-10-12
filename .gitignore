@@ -1,20 +1,23 @@
+
 ### IntelliJ IDEA ###
+.idea/
+*.iml
+*.iws
+*.ipr
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-.kotlin
+.kotlin/
 
 ### Eclipse ###
-.apt_generated
+.apt_generated/
+.apt_generated_tests/
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
-.sts4-cache
+.sts4-cache/
+.metadata/
 bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
 
 ### NetBeans ###
 /nbproject/private/
@@ -22,9 +25,57 @@ bin/
 /dist/
 /nbdist/
 /.nb-gradle/
+/build/
 
 ### VS Code ###
 .vscode/
+*.code-workspace
 
-### Mac OS ###
+### Maven ###
+target/
+.mvn/timing.properties
+
+### Gradle ###
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### Java ###
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+### Temporary Files ###
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+*.orig
+
+### Windows ###
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+### macOS ###
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100/
+.Trashes/
+
+### Linux ###
+.directory
+.Trash-*
+.nfs*
+
+### Local Environment ###
+.env
+.env.local
+.env.*.local
