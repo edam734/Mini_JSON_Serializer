@@ -16,7 +16,7 @@ public class StringEscaper {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            if (c == '\"' || c == '\\') {
+            if (c == '"' || c == '\\') {
                 sb.append("\\").append(c);
             } else if (c >= 0x00 && c <= 0x1F) {
                 sb.append(String.format("\\u%04x", (int) c));
