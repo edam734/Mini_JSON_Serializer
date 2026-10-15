@@ -2,19 +2,20 @@ package com.edam.minijson.internal;
 
 import com.edam.minijson.exception.JsonSerializationException;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.*;
 import java.time.temporal.Temporal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SerializationEngine {
 
-    public String serialize(Object obj) throws IllegalAccessException {
+    public String serialize(Object obj) {
         if (obj == null) {
             return "null";
         }
-
         Class<?> fieldClass = obj.getClass();
 
         if (Object.class == fieldClass) {
@@ -26,11 +27,27 @@ public class SerializationEngine {
         } else if (obj instanceof Number) {
             return String.valueOf(obj);
         } else if (Collection.class.isAssignableFrom(fieldClass)) {
-            return ""; // TODO
+            return "[" + ((Collection<?>) obj).stream()
+                    .map(this::serialize)
+                    .collect(Collectors.joining(",")) + "]";
         } else if (Map.class.isAssignableFrom(fieldClass)) {
-            return ""; // TODO
+            Set<? extends Map.Entry<?, ?>> entries = ((Map<?, ?>) obj).entrySet();
+            return "{" + entries.stream()
+                    .map(entry -> serialize(String.valueOf(entry.getKey())) + ":" +
+                            serialize(entry.getValue()))
+                    .collect(Collectors.joining(",")) + "}";
         } else if (fieldClass.isArray()) {
-            return ""; // TODO
+            StringBuilder sb = new StringBuilder();
+            int length = Array.getLength(obj);
+
+            for (int i = 0; i < length; i++) {
+                if (i > 0) {
+                    sb.append(",");
+                }
+                Object element = Array.get(obj, i);
+                sb.append(serialize(element));
+            }
+            return "[" + sb + "]";
         } else if (obj instanceof Enum<?>) {
             return "\"" + ((Enum<?>) obj).name() + "\"";
         } else if (obj instanceof java.util.Date) {
@@ -58,10 +75,16 @@ public class SerializationEngine {
                         sb.append(",");
                     }
                     sb.append("\"").append(field.getName()).append("\":");
-                    if (!field.canAccess(modifiers)) {
+
+                    if (!field.canAccess(obj)) {
                         field.setAccessible(true);
                     }
-                    String serialized = serialize(field.get(obj));
+                    String serialized;
+                    try {
+                        serialized = serialize(field.get(obj));
+                    } catch (IllegalAccessException e) {
+                        throw new JsonSerializationException(e);
+                    }
                     sb.append(serialized);
 
                     started = true;
@@ -85,54 +108,4 @@ public class SerializationEngine {
             return result;
         }
     }
-
-    static void main() throws IllegalAccessException {
-
-        //        Object o = "Isto é uma \"String\".";
-        Object u = new User(1, "John", "johnny@gmail.com", Status.LOGGED_OFF);
-        Date date = new Date(50000);
-        Temporal t = Instant.now();
-        SerializationEngine engine = new SerializationEngine();
-        String json = engine.serialize(t);
-        System.out.println(json);
-    }
-
-    /**********************
-     *  For some testing  *
-     **********************/
-
-    enum Status {
-        LOGGED_IN, LOGGED_OFF;
-    }
-
-    static class User {
-        private int id;
-        private String name;
-        private String email;
-        private SerializationEngine.Status status;
-
-        public User(int id, String name, String email, SerializationEngine.Status status) {
-            this.id = id;
-            this.name = name;
-            this.email = email;
-            this.status = status;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public SerializationEngine.Status getStauts() {
-            return status;
-        }
-    }
-
 }
