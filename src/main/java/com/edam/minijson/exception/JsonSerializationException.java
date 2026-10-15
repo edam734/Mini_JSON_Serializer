@@ -9,4 +9,8 @@ public class JsonSerializationException extends RuntimeException {
     public JsonSerializationException(Throwable e) {
         super(e);
     }
+
+    public JsonSerializationException(String message, Throwable e) {
+        super(message, e);
+    }
 }

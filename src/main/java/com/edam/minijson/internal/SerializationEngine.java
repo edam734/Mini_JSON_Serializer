@@ -63,34 +63,44 @@ public class SerializationEngine {
                     "Unsupported temporal type: " + obj.getClass().getName());
         } else {
             // is custom object
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
 
-            boolean started = false;
             List<Field> fields = getAllFields(new ArrayList<>(), fieldClass);
+
             for (Field field : fields) {
                 int modifiers = field.getModifiers();
-                if (!Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers) &&
-                        !field.isSynthetic()) {
-                    if (started) {
-                        sb.append(",");
-                    }
-                    sb.append("\"").append(field.getName()).append("\":");
 
-                    if (!field.canAccess(obj)) {
-                        field.setAccessible(true);
-                    }
-                    String serialized;
-                    try {
-                        serialized = serialize(field.get(obj));
-                    } catch (IllegalAccessException e) {
-                        throw new JsonSerializationException(e);
-                    }
-                    sb.append(serialized);
-
-                    started = true;
+                if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers) ||
+                        field.isSynthetic()) {
+                    continue;
                 }
+
+
+                if (!field.canAccess(obj) && !field.trySetAccessible()) {
+                    throw new JsonSerializationException("Cannot access field: " + field);
+                }
+
+                Object value;
+                try {
+                    value = field.get(obj);
+                } catch (IllegalAccessException e) {
+                    throw new JsonSerializationException("Cannot access field: " + field, e);
+                }
+
+                if (!first) {
+                    sb.append(",");
+                }
+
+                sb.append("\"")
+                        .append(StringEscaper.escape(field.getName()))
+                        .append("\":")
+                        .append(serialize(value));
+
+                first = false;
             }
-            return "{" + sb + "}";
+
+            return sb.append("}").toString();
         }
     }
 
