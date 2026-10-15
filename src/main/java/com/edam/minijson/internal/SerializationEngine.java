@@ -13,6 +13,11 @@ import java.util.stream.Collectors;
 public class SerializationEngine {
 
     public String serialize(Object obj) {
+        SerializationContext context = new SerializationContext();
+        return serialize(context, obj);
+    }
+
+    public String serialize(SerializationContext context, Object obj) {
         if (obj == null) {
             return "null";
         }
@@ -27,25 +32,57 @@ public class SerializationEngine {
         } else if (obj instanceof Number) {
             return String.valueOf(obj);
         } else if (Collection.class.isAssignableFrom(fieldClass)) {
-            return "[" + ((Collection<?>) obj).stream()
-                    .map(this::serialize)
-                    .collect(Collectors.joining(",")) + "]";
+            if (!context.addObject(obj)) {
+                return null;
+            }
+            try {
+                return "[" + ((Collection<?>) obj).stream()
+                        .map(elem -> serialize(context, elem))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(",")) + "]";
+            } finally {
+                context.removeObject(obj);
+            }
         } else if (Map.class.isAssignableFrom(fieldClass)) {
-            Set<? extends Map.Entry<?, ?>> entries = ((Map<?, ?>) obj).entrySet();
-            return "{" + entries.stream()
-                    .map(entry -> serialize(String.valueOf(entry.getKey())) + ":" +
-                            serialize(entry.getValue()))
-                    .collect(Collectors.joining(",")) + "}";
+            if (!context.addObject(obj)) {
+                return null;
+            }
+            try {
+                Set<? extends Map.Entry<?, ?>> entries = ((Map<?, ?>) obj).entrySet();
+                return "{" + entries.stream().map(entry -> {
+                    String serialized = serialize(context, entry.getValue());
+                    if (serialized != null) {
+                        return serialize(context, String.valueOf(entry.getKey())) + ":" +
+                                serialized;
+                    }
+                    return null;
+                }).filter(Objects::nonNull).collect(Collectors.joining(",")) + "}";
+            } finally {
+                context.removeObject(obj);
+            }
         } else if (fieldClass.isArray()) {
+            if (!context.addObject(obj)) {
+                return null;
+            }
+
             StringBuilder sb = new StringBuilder();
             int length = Array.getLength(obj);
 
-            for (int i = 0; i < length; i++) {
-                if (i > 0) {
-                    sb.append(",");
+            boolean first = true;
+            try {
+                for (int i = 0; i < length; i++) {
+                    Object element = Array.get(obj, i);
+                    String serialized = serialize(context, element);
+                    if (serialized != null) {
+                        if (!first) {
+                            sb.append(",");
+                        }
+                        first = false;
+                        sb.append(serialized);
+                    }
                 }
-                Object element = Array.get(obj, i);
-                sb.append(serialize(element));
+            } finally {
+                context.removeObject(obj);
             }
             return "[" + sb + "]";
         } else if (obj instanceof Enum<?>) {
@@ -63,6 +100,10 @@ public class SerializationEngine {
                     "Unsupported temporal type: " + obj.getClass().getName());
         } else {
             // is custom object
+            if (!context.addObject(obj)) {
+                return null;
+            }
+
             StringBuilder sb = new StringBuilder("{");
             boolean first = true;
 
@@ -76,7 +117,6 @@ public class SerializationEngine {
                     continue;
                 }
 
-
                 if (!field.canAccess(obj) && !field.trySetAccessible()) {
                     throw new JsonSerializationException("Cannot access field: " + field);
                 }
@@ -88,14 +128,21 @@ public class SerializationEngine {
                     throw new JsonSerializationException("Cannot access field: " + field, e);
                 }
 
-                if (!first) {
-                    sb.append(",");
-                }
 
-                sb.append("\"")
-                        .append(StringEscaper.escape(field.getName()))
-                        .append("\":")
-                        .append(serialize(value));
+                try {
+                    String serialized = serialize(context, value);
+                    if (serialized != null) {
+                        if (!first) {
+                            sb.append(",");
+                        }
+                        sb.append("\"")
+                                .append(StringEscaper.escape(field.getName()))
+                                .append("\":")
+                                .append(serialized);
+                    }
+                } finally {
+                    context.removeObject(value);
+                }
 
                 first = false;
             }
