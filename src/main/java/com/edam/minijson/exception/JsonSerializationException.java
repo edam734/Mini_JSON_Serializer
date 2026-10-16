@@ -1,5 +1,9 @@
 package com.edam.minijson.exception;
 
+/**
+ * Exception thrown when an error occurs during JSON serialization, such as an unsupported Java type
+ * or an inaccessible field.
+ */
 public class JsonSerializationException extends RuntimeException {
 
     public JsonSerializationException(String message) {

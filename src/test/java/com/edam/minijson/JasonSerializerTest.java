@@ -1,13 +1,12 @@
 package com.edam.minijson;
 
+import com.edam.minijson.exception.JsonSerializationException;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JasonSerializerTest {
 
@@ -68,6 +67,55 @@ public class JasonSerializerTest {
     }
 
     @Test
+    void shouldSerializeUUID() {
+        UUID uuid = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+
+        assertEquals("\"550e8400-e29b-41d4-a716-446655440000\"", JsonSerializer.toJson(uuid));
+    }
+
+    @Test
+    void shouldSerializeNaN() {
+        assertEquals("\"NaN\"", JsonSerializer.toJson(Double.NaN));
+    }
+
+    @Test
+    void shouldSerializeInfinity() {
+        assertEquals("\"Infinity\"", JsonSerializer.toJson(Double.POSITIVE_INFINITY));
+        assertEquals("\"-Infinity\"", JsonSerializer.toJson(Double.NEGATIVE_INFINITY));
+    }
+
+    @Test
+    void shouldSerializeOptional() {
+        record User(String name) {
+        }
+
+        assertEquals("{\"name\":\"John\"}", JsonSerializer.toJson(Optional.of(new User("John"))));
+
+        assertEquals("null", JsonSerializer.toJson(Optional.empty()));
+    }
+
+    @Test
+    void shouldSerializeOptionalInt() {
+        assertEquals("25", JsonSerializer.toJson(OptionalInt.of(25)));
+
+        assertEquals("null", JsonSerializer.toJson(OptionalInt.empty()));
+    }
+
+    @Test
+    void shouldSerializeOptionalLong() {
+        assertEquals("123456789", JsonSerializer.toJson(OptionalLong.of(123456789L)));
+
+        assertEquals("null", JsonSerializer.toJson(OptionalLong.empty()));
+    }
+
+    @Test
+    void shouldSerializeOptionalDouble() {
+        assertEquals("12.5", JsonSerializer.toJson(OptionalDouble.of(12.5)));
+
+        assertEquals("null", JsonSerializer.toJson(OptionalDouble.empty()));
+    }
+
+    @Test
     void shouldSerializeArray() {
         int[] numbers = {1, 2, 3};
 
@@ -104,12 +152,50 @@ public class JasonSerializerTest {
     }
 
     @Test
+    void shouldRejectUnsupportedJdkTypes() {
+        JsonSerializationException exception = assertThrows(JsonSerializationException.class,
+                () -> JsonSerializer.toJson(new Thread()));
+
+        assertEquals("Unsupported Java type: java.lang.Thread", exception.getMessage());
+    }
+
+    @Test
     void shouldSerializeObject() {
         User user = new User(1, "John", "john@gmail.com");
 
         String expected = "{\"id\":1,\"name\":\"John\",\"email\":\"john@gmail.com\"}";
 
         assertEquals(expected, JsonSerializer.toJson(user));
+    }
+
+    @Test
+    void shouldSerializeInheritedFieldsWithoutDuplicates() {
+        class Grandparent {
+            String name = "Grandparent";
+            int age = 70;
+            String country = "Portugal";
+        }
+
+        class Parent extends Grandparent {
+            String name = "Parent";
+            int age = 45;
+            String profession = "Engineer";
+        }
+
+        class Child extends Parent {
+            String name = "Child";
+            int age = 20;
+            String hobby = "Gaming";
+
+            static String country = "Spain";
+            transient String profession = "Doctor";
+        }
+
+        String json = JsonSerializer.toJson(new Child());
+
+        assertEquals(
+                "{\"name\":\"Child\",\"age\":20,\"hobby\":\"Gaming\",\"profession\":\"Engineer\",\"country\":\"Portugal\"}",
+                json);
     }
 
     @Test
@@ -131,8 +217,8 @@ public class JasonSerializerTest {
 
         PersonHolder holder = new PersonHolder(mary, mary);
 
-        String expected = "{\"first\":{\"name\":\"Mary\",\"friend\":null},"
-                + "\"second\":{\"name\":\"Mary\",\"friend\":null}}";
+        String expected = "{\"first\":{\"name\":\"Mary\",\"friend\":null}," +
+                "\"second\":{\"name\":\"Mary\",\"friend\":null}}";
 
         assertEquals(expected, JsonSerializer.toJson(holder));
     }
@@ -147,10 +233,8 @@ public class JasonSerializerTest {
 
         PersonHolder holder = new PersonHolder(mary, mary);
 
-        String expected = "{"
-                + "\"first\":{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}},"
-                + "\"second\":{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}"
-                + "}";
+        String expected = "{" + "\"first\":{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}," +
+                "\"second\":{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}" + "}";
 
         assertEquals(expected, JsonSerializer.toJson(holder));
     }
@@ -207,10 +291,8 @@ public class JasonSerializerTest {
         people.add(mary);
         people.add(john);
 
-        String expected = "["
-                + "{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}},"
-                + "{\"name\":\"John\",\"friend\":null}"
-                + "]";
+        String expected = "[" + "{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}," +
+                "{\"name\":\"John\",\"friend\":null}" + "]";
 
         assertEquals(expected, JsonSerializer.toJson(people));
     }
@@ -257,18 +339,13 @@ public class JasonSerializerTest {
 
         String expectedPerson = "{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}";
 
-        String expectedMap = "{\"people\":["
-                + expectedPerson + ","
-                + expectedPerson + ","
-                + "null,[1,2,3]"
-                + "],\"status\":\"active\"}";
+        String expectedMap =
+                "{\"people\":[" + expectedPerson + "," + expectedPerson + "," + "null,[1,2,3]" +
+                        "],\"status\":\"active\"}";
 
-        String expected = "["
-                + expectedMap + ","
-                + "[true,\"Hello\"," + expectedPerson + "],"
-                + expectedMap + ","
-                + "null"
-                + "]";
+        String expected =
+                "[" + expectedMap + "," + "[true,\"Hello\"," + expectedPerson + "]," + expectedMap +
+                        "," + "null" + "]";
 
         assertEquals(expected, JsonSerializer.toJson(root));
     }

@@ -29,8 +29,36 @@ public class SerializationEngine {
             return "\"" + StringEscaper.escape(String.valueOf(obj)) + "\"";
         } else if (obj instanceof Boolean) {
             return Boolean.toString((boolean) obj);
+        } else if (obj instanceof UUID) {
+            return "\"" + obj + "\"";
         } else if (obj instanceof Number) {
+            if (isNaN(obj)) {
+                return "\"NaN\"";
+            }
+            if (isInfinity(obj)) {
+                return "\"" + obj + "\"";
+            }
             return String.valueOf(obj);
+        } else if (obj instanceof Optional<?> optional) {
+            if (optional.isEmpty()) {
+                return "null";
+            }
+            return serialize(optional.get());
+        } else if (obj instanceof OptionalInt optionalInt) {
+            if (optionalInt.isEmpty()) {
+                return "null";
+            }
+            return serialize(optionalInt.getAsInt());
+        } else if (obj instanceof OptionalLong optionalLong) {
+            if (optionalLong.isEmpty()) {
+                return "null";
+            }
+            return serialize(optionalLong.getAsLong());
+        } else if (obj instanceof OptionalDouble optionalDouble) {
+            if (optionalDouble.isEmpty()) {
+                return "null";
+            }
+            return serialize(optionalDouble.getAsDouble());
         } else if (Collection.class.isAssignableFrom(fieldClass)) {
             if (!context.addObject(obj)) {
                 return null;
@@ -99,6 +127,12 @@ public class SerializationEngine {
             throw new JsonSerializationException(
                     "Unsupported temporal type: " + obj.getClass().getName());
         } else {
+            Module classModule = fieldClass.getModule();
+            if (isJdkModule(classModule)) {
+                throw new JsonSerializationException(
+                        "Unsupported Java type: " + fieldClass.getName());
+            }
+
             // is custom object
             if (!context.addObject(obj)) {
                 return null;
@@ -107,7 +141,7 @@ public class SerializationEngine {
             StringBuilder sb = new StringBuilder("{");
             boolean first = true;
 
-            List<Field> fields = getAllFields(new ArrayList<>(), fieldClass);
+            List<Field> fields = getAllFields(fieldClass);
 
             for (Field field : fields) {
                 int modifiers = field.getModifiers();
@@ -127,7 +161,6 @@ public class SerializationEngine {
                 } catch (IllegalAccessException e) {
                     throw new JsonSerializationException("Cannot access field: " + field, e);
                 }
-
 
                 try {
                     String serialized = serialize(context, value);
@@ -151,16 +184,43 @@ public class SerializationEngine {
         }
     }
 
+    private boolean isNaN(Object obj) {
+        return (obj instanceof Double d && d.isNaN()) || obj instanceof Float f && f.isNaN();
+    }
+
+    private boolean isInfinity(Object obj) {
+        return (obj instanceof Double d && d.isInfinite()) ||
+                obj instanceof Float f && f.isInfinite();
+    }
+
     private boolean isKnownTemporal(Object obj) {
         return obj instanceof LocalDate || obj instanceof LocalTime ||
                 obj instanceof LocalDateTime || obj instanceof Instant ||
                 obj instanceof OffsetDateTime || obj instanceof ZonedDateTime;
     }
 
-    private List<Field> getAllFields(List<Field> result, Class<?> clazz) {
+    private boolean isJdkModule(Module classModule) {
+        String moduleName = classModule.getName();
+        return moduleName != null &&
+                (moduleName.startsWith("java.") || moduleName.startsWith("jdk."));
+    }
+
+    private List<Field> getAllFields(Class<?> clazz) {
+        return getAllFields(new ArrayList<>(), new HashSet<>(), clazz);
+    }
+
+    private List<Field> getAllFields(List<Field> result, Set<String> foundFields, Class<?> clazz) {
         if (Object.class != clazz) {
-            Collections.addAll(result, clazz.getDeclaredFields());
-            return getAllFields(result, clazz.getSuperclass());
+            for (Field field : clazz.getDeclaredFields()) {
+                int modifiers = field.getModifiers();
+                if (!Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers) &&
+                        !field.isSynthetic()) {
+                    if (foundFields.add(field.getName())) {
+                        result.add(field);
+                    }
+                }
+            }
+            return getAllFields(result, foundFields, clazz.getSuperclass());
         } else {
             return result;
         }
