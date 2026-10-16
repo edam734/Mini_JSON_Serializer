@@ -127,8 +127,8 @@ public class SerializationEngine {
             throw new JsonSerializationException(
                     "Unsupported temporal type: " + obj.getClass().getName());
         } else {
-            Module classModule = fieldClass.getModule();
-            if (isJdkModule(classModule)) {
+
+            if (isJdkModule(fieldClass.getModule())) {
                 throw new JsonSerializationException(
                         "Unsupported Java type: " + fieldClass.getName());
             }
