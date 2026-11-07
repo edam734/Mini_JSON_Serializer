@@ -1,4 +1,4 @@
-package com.edam.minijson.internal;
+package com.edam.minijson.serialization;
 
 public class StringEscaper {
 

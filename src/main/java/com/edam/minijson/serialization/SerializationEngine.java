@@ -1,4 +1,4 @@
-package com.edam.minijson.internal;
+package com.edam.minijson.serialization;
 
 import com.edam.minijson.exception.JsonSerializationException;
 

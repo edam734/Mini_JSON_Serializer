@@ -1,7 +1,8 @@
 package com.edam.minijson;
 
+import com.edam.minijson.deserialization.JsonParser;
 import com.edam.minijson.exception.JsonSerializationException;
-import com.edam.minijson.internal.SerializationEngine;
+import com.edam.minijson.serialization.SerializationEngine;
 
 /**
  * Provides methods for converting Java objects to and from JSON.
@@ -11,7 +12,7 @@ import com.edam.minijson.internal.SerializationEngine;
  *
  * @author edam
  */
-public class JsonSerializer {
+public class JsonMapper {
 
     /**
      * Serializes a Java object into its JSON representation.
@@ -23,5 +24,11 @@ public class JsonSerializer {
     public static String toJson(Object obj) {
         SerializationEngine serializationEngine = new SerializationEngine();
         return serializationEngine.serialize(obj);
+    }
+
+    public static <T> T fromJson(String json, Class<T> clazz) {
+        JsonParser jsonParser = new JsonParser(json);
+        jsonParser.parse();
+        return null;
     }
 }

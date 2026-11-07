@@ -1,6 +1,8 @@
-package com.edam.minijson;
+package com.edam.minijson.serialization;
 
+import com.edam.minijson.JsonMapper;
 import com.edam.minijson.exception.JsonSerializationException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -47,41 +49,41 @@ public class JasonSerializerTest {
 
     @Test
     void shouldSerializeNull() {
-        assertEquals("null", com.edam.minijson.JsonSerializer.toJson(null));
+        Assertions.assertEquals("null", JsonMapper.toJson(null));
     }
 
     @Test
     void shouldSerializeBoolean() {
-        assertEquals("true", JsonSerializer.toJson(true));
+        assertEquals("true", JsonMapper.toJson(true));
     }
 
     @Test
     void shouldSerializeString() {
-        assertEquals("\"Hello\"", JsonSerializer.toJson("Hello"));
+        assertEquals("\"Hello\"", JsonMapper.toJson("Hello"));
     }
 
     @Test
     void shouldSerializeEnum() {
-        assertEquals("\"LOGGED_IN\"", JsonSerializer.toJson(Status.LOGGED_IN));
-        assertEquals("\"LOGGED_OFF\"", JsonSerializer.toJson(Status.LOGGED_OFF));
+        assertEquals("\"LOGGED_IN\"", JsonMapper.toJson(Status.LOGGED_IN));
+        assertEquals("\"LOGGED_OFF\"", JsonMapper.toJson(Status.LOGGED_OFF));
     }
 
     @Test
     void shouldSerializeUUID() {
         UUID uuid = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
-        assertEquals("\"550e8400-e29b-41d4-a716-446655440000\"", JsonSerializer.toJson(uuid));
+        assertEquals("\"550e8400-e29b-41d4-a716-446655440000\"", JsonMapper.toJson(uuid));
     }
 
     @Test
     void shouldSerializeNaN() {
-        assertEquals("\"NaN\"", JsonSerializer.toJson(Double.NaN));
+        assertEquals("\"NaN\"", JsonMapper.toJson(Double.NaN));
     }
 
     @Test
     void shouldSerializeInfinity() {
-        assertEquals("\"Infinity\"", JsonSerializer.toJson(Double.POSITIVE_INFINITY));
-        assertEquals("\"-Infinity\"", JsonSerializer.toJson(Double.NEGATIVE_INFINITY));
+        assertEquals("\"Infinity\"", JsonMapper.toJson(Double.POSITIVE_INFINITY));
+        assertEquals("\"-Infinity\"", JsonMapper.toJson(Double.NEGATIVE_INFINITY));
     }
 
     @Test
@@ -89,37 +91,37 @@ public class JasonSerializerTest {
         record User(String name) {
         }
 
-        assertEquals("{\"name\":\"John\"}", JsonSerializer.toJson(Optional.of(new User("John"))));
+        assertEquals("{\"name\":\"John\"}", JsonMapper.toJson(Optional.of(new User("John"))));
 
-        assertEquals("null", JsonSerializer.toJson(Optional.empty()));
+        assertEquals("null", JsonMapper.toJson(Optional.empty()));
     }
 
     @Test
     void shouldSerializeOptionalInt() {
-        assertEquals("25", JsonSerializer.toJson(OptionalInt.of(25)));
+        assertEquals("25", JsonMapper.toJson(OptionalInt.of(25)));
 
-        assertEquals("null", JsonSerializer.toJson(OptionalInt.empty()));
+        assertEquals("null", JsonMapper.toJson(OptionalInt.empty()));
     }
 
     @Test
     void shouldSerializeOptionalLong() {
-        assertEquals("123456789", JsonSerializer.toJson(OptionalLong.of(123456789L)));
+        assertEquals("123456789", JsonMapper.toJson(OptionalLong.of(123456789L)));
 
-        assertEquals("null", JsonSerializer.toJson(OptionalLong.empty()));
+        assertEquals("null", JsonMapper.toJson(OptionalLong.empty()));
     }
 
     @Test
     void shouldSerializeOptionalDouble() {
-        assertEquals("12.5", JsonSerializer.toJson(OptionalDouble.of(12.5)));
+        assertEquals("12.5", JsonMapper.toJson(OptionalDouble.of(12.5)));
 
-        assertEquals("null", JsonSerializer.toJson(OptionalDouble.empty()));
+        assertEquals("null", JsonMapper.toJson(OptionalDouble.empty()));
     }
 
     @Test
     void shouldSerializeArray() {
         int[] numbers = {1, 2, 3};
 
-        assertEquals("[1,2,3]", JsonSerializer.toJson(numbers));
+        assertEquals("[1,2,3]", JsonMapper.toJson(numbers));
     }
 
     @Test
@@ -134,7 +136,7 @@ public class JasonSerializerTest {
                 "{\"id\":2,\"name\":\"Mary\",\"email\":\"mary@gmail.com\"}," +
                 "{\"id\":3,\"name\":\"Peter\",\"email\":\"peter@gmail.com\"}" + "]";
 
-        assertEquals(expected, JsonSerializer.toJson(users));
+        assertEquals(expected, JsonMapper.toJson(users));
     }
 
     @Test
@@ -148,13 +150,13 @@ public class JasonSerializerTest {
                 "{" + "\"admin\":{\"id\":1,\"name\":\"John\",\"email\":\"john@gmail.com\"}," +
                         "\"guest\":{\"id\":2,\"name\":\"Mary\",\"email\":\"mary@gmail.com\"}" + "}";
 
-        assertEquals(expected, JsonSerializer.toJson(users));
+        assertEquals(expected, JsonMapper.toJson(users));
     }
 
     @Test
     void shouldRejectUnsupportedJdkTypes() {
         JsonSerializationException exception = assertThrows(JsonSerializationException.class,
-                () -> JsonSerializer.toJson(new Thread()));
+                () -> JsonMapper.toJson(new Thread()));
 
         assertEquals("Unsupported Java type: java.lang.Thread", exception.getMessage());
     }
@@ -165,7 +167,7 @@ public class JasonSerializerTest {
 
         String expected = "{\"id\":1,\"name\":\"John\",\"email\":\"john@gmail.com\"}";
 
-        assertEquals(expected, JsonSerializer.toJson(user));
+        assertEquals(expected, JsonMapper.toJson(user));
     }
 
     @Test
@@ -191,7 +193,7 @@ public class JasonSerializerTest {
             transient String profession = "Doctor";
         }
 
-        String json = JsonSerializer.toJson(new Child());
+        String json = JsonMapper.toJson(new Child());
 
         assertEquals(
                 "{\"name\":\"Child\",\"age\":20,\"hobby\":\"Gaming\",\"profession\":\"Engineer\",\"country\":\"Portugal\"}",
@@ -208,7 +210,7 @@ public class JasonSerializerTest {
 
         String expected = "{\"name\":\"John\",\"friend\":{\"name\":\"Mary\"}}";
 
-        assertEquals(expected, JsonSerializer.toJson(a));
+        assertEquals(expected, JsonMapper.toJson(a));
     }
 
     @Test
@@ -220,7 +222,7 @@ public class JasonSerializerTest {
         String expected = "{\"first\":{\"name\":\"Mary\",\"friend\":null}," +
                 "\"second\":{\"name\":\"Mary\",\"friend\":null}}";
 
-        assertEquals(expected, JsonSerializer.toJson(holder));
+        assertEquals(expected, JsonMapper.toJson(holder));
     }
 
     @Test
@@ -236,7 +238,7 @@ public class JasonSerializerTest {
         String expected = "{" + "\"first\":{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}," +
                 "\"second\":{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}" + "}";
 
-        assertEquals(expected, JsonSerializer.toJson(holder));
+        assertEquals(expected, JsonMapper.toJson(holder));
     }
 
     @Test
@@ -249,7 +251,7 @@ public class JasonSerializerTest {
 
         String expected = "[\"John\",\"Mary\"]";
 
-        assertEquals(expected, JsonSerializer.toJson(list));
+        assertEquals(expected, JsonMapper.toJson(list));
     }
 
     @Test
@@ -262,7 +264,7 @@ public class JasonSerializerTest {
 
         String expected = "{\"name\":\"John\",\"age\":30}";
 
-        assertEquals(expected, JsonSerializer.toJson(map));
+        assertEquals(expected, JsonMapper.toJson(map));
     }
 
     @Test
@@ -275,7 +277,7 @@ public class JasonSerializerTest {
 
         String expected = "[\"John\",\"Mary\"]";
 
-        assertEquals(expected, JsonSerializer.toJson(array));
+        assertEquals(expected, JsonMapper.toJson(array));
     }
 
     @Test
@@ -294,7 +296,7 @@ public class JasonSerializerTest {
         String expected = "[" + "{\"name\":\"Mary\",\"friend\":{\"name\":\"Bob\"}}," +
                 "{\"name\":\"John\",\"friend\":null}" + "]";
 
-        assertEquals(expected, JsonSerializer.toJson(people));
+        assertEquals(expected, JsonMapper.toJson(people));
     }
 
     @Test
@@ -308,7 +310,7 @@ public class JasonSerializerTest {
 
         String expected = "[\"John\",\"Mary\"]";
 
-        assertEquals(expected, JsonSerializer.toJson(array));
+        assertEquals(expected, JsonMapper.toJson(array));
     }
 
     @Test
@@ -347,6 +349,6 @@ public class JasonSerializerTest {
                 "[" + expectedMap + "," + "[true,\"Hello\"," + expectedPerson + "]," + expectedMap +
                         "," + "null" + "]";
 
-        assertEquals(expected, JsonSerializer.toJson(root));
+        assertEquals(expected, JsonMapper.toJson(root));
     }
 }

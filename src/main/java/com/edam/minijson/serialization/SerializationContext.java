@@ -1,4 +1,4 @@
-package com.edam.minijson.internal;
+package com.edam.minijson.serialization;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
